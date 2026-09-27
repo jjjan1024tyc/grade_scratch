@@ -5,45 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Scratch評量工具</title>
     
-    <!-- 引入 Tailwind CSS 框架 -->
     <script src="https://cdn.tailwindcss.com"></script>
     
     <script>
+        // 攔截並隱藏資源載入錯誤
         window.scriptLoadErrors = [];
         function handleScriptError(script) {
             const src = script.src;
             const name = src.split('/').pop(); 
-            console.error(`[關鍵錯誤] Script load failed: ${src}`);
-            const logDiv = document.getElementById('consoleLog');
-            if (logDiv) {
-                const entry = document.createElement('div');
-                entry.className = `log-entry text-red-400`;
-                entry.innerText = `[系統錯誤] 無法載入關鍵核心: ${name}，請檢查網路狀態。`;
-                logDiv.appendChild(entry);
-            }
+            console.error(`[載入警告] 核心模組異常: ${name}。將嘗試繼續執行。`);
         }
     </script>
 
-    <!-- 引入 Scratch 虛擬機與必要套件 (完全移除音效套件，避免 HTTPS 下的死鎖) -->
+    <!-- 僅載入必備的核心虛擬機 -->
     <script src="https://cdn.jsdelivr.net/npm/scratch-vm/dist/web/scratch-vm.min.js" crossorigin="anonymous" onerror="handleScriptError(this)"></script>
     <script src="https://cdn.jsdelivr.net/npm/scratch-storage/dist/web/scratch-storage.min.js" crossorigin="anonymous" onerror="handleScriptError(this)"></script>
     <script src="https://cdn.jsdelivr.net/npm/scratch-svg-renderer/dist/web/scratch-svg-renderer.js" crossorigin="anonymous" onerror="handleScriptError(this)"></script>
-    <script src="https://cdn.jsdelivr.net/npm/scratch-render/dist/web/scratch-render.min.js" crossorigin="anonymous" onerror="handleScriptError(this)"></script>
-    
-    <!-- Font Awesome -->
+    <!-- 不載入 Scratch Render，避免渲染卡死 -->
+    <!-- 完全不載入 Scratch AudioEngine，根除音效解碼死鎖問題 -->
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
 
     <style>
         body { font-family: 'Noto Sans TC', 'Inter', sans-serif; background-color: #f8fafc; }
         .log-entry { font-family: 'Courier New', Courier, monospace; font-size: 0.8rem; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
         
-        /* 統一加大的輸入框樣式 */
         .custom-input { width: 100%; min-width: 0; padding: 6px 8px; text-align: center; border: 1px solid #d1d5db; border-radius: 6px; outline: none; transition: all 0.2s; font-family: inherit; font-size: 18px; }
         .custom-input:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2); }
         .var-input { width: 100%; padding: 6px 8px; border: 1px solid #cbd5e1; border-radius: 4px; outline: none; font-size: 18px; }
         .var-input:focus { border-color: #8b5cf6; box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2); }
         
-        /* 鎖定狀態隱藏外觀 */
         .custom-input:disabled { background-color: transparent !important; border-color: transparent; box-shadow: none; cursor: default; }
         .var-input:disabled, .mode-select:disabled { background-color: transparent !important; color: #475569; border-color: transparent; box-shadow: none; cursor: default; appearance: none; -webkit-appearance: none; padding-left: 0;}
         
@@ -58,7 +49,7 @@
     <!-- 左側面板：變數設定區 -->
     <div class="w-full xl:w-3/12 bg-white p-6 shadow-xl overflow-y-auto flex flex-col gap-6 z-10 border-r border-slate-200">
         <div class="border-b pb-4 flex flex-col gap-3">
-            <div class="flex items-center">
+            <div class="flex items-center justify-between">
                 <h1 class="text-[22px] font-bold text-slate-800 flex items-center">
                     <i class="fa-solid fa-microchip mr-2 text-indigo-500"></i>Scratch評量工具
                 </h1>
@@ -80,7 +71,6 @@
             </div>
             
             <div class="flex flex-col gap-4">
-                <!-- 輸入變數 -->
                 <div class="bg-white p-3 rounded border border-violet-100 shadow-sm">
                     <div class="flex justify-between items-center mb-2">
                         <span class="text-[18px] font-bold text-slate-700">Scratch 輸入變數</span>
@@ -94,7 +84,6 @@
                     <div id="inputConfigContainer" class="flex flex-col gap-2"></div>
                 </div>
 
-                <!-- 輸出變數 -->
                 <div class="bg-white p-3 rounded border border-violet-100 shadow-sm">
                     <div class="flex justify-between items-center mb-2">
                         <span class="text-[18px] font-bold text-slate-700">Scratch 輸出變數</span>
@@ -113,26 +102,57 @@
 
     <!-- 右側面板：表格與顯示區 -->
     <div class="w-full xl:w-9/12 bg-slate-100 flex flex-col h-full overflow-hidden relative">
-        <div class="bg-white p-4 border-b border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4 z-20 shadow-sm">
-            <div class="flex items-center gap-2 w-full md:w-auto overflow-hidden">
+        <div class="bg-white p-4 border-b border-slate-200 flex flex-col gap-3 z-20 shadow-sm">
+            <div class="flex flex-wrap items-center gap-3 w-full">
                 <label class="text-[18px] font-bold text-slate-700 whitespace-nowrap"><i class="fa-solid fa-cloud-arrow-down text-slate-400 mr-1"></i> 載入Scratch專案</label>
                 <input type="text" id="projectUrl" placeholder="例如: 1263904376" class="w-48 p-2 border border-slate-300 rounded focus:ring-2 focus:ring-indigo-500 focus:outline-none text-[18px] font-mono" value="1263904376">
+                
                 <button onclick="loadProject()" id="loadBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded text-[18px] transition font-medium flex items-center gap-2 whitespace-nowrap">
                     <span>載入</span>
                 </button>
-                <span id="projectTitle" class="text-[18px] text-slate-600 font-medium truncate flex-1 ml-2"></span>
-            </div>
-            
-            <div class="w-full md:w-auto flex gap-2">
-                <button onclick="runBatchTest()" id="runBtn" disabled class="w-full bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold py-2 px-6 rounded-lg shadow-md transition flex justify-center items-center gap-2 text-[18px] whitespace-nowrap">
+                
+                <button onclick="runBatchTest()" id="runBtn" disabled class="bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold py-2 px-6 rounded-lg shadow-md transition flex items-center gap-2 text-[18px] whitespace-nowrap">
                     <i class="fa-solid fa-play"></i> 開始自動評分
                 </button>
+            </div>
+            
+            <div id="infoTableContainer" class="hidden w-full border border-slate-300 rounded-lg overflow-x-auto mt-1 shadow-sm">
+                <table class="w-full text-[16px] xl:text-[18px] border-collapse table-auto bg-white min-w-max">
+                    <thead class="bg-indigo-50 border-b border-slate-300 text-indigo-900">
+                        <tr>
+                            <th class="p-2 border-r border-slate-300 font-bold text-center whitespace-nowrap">作者</th>
+                            <th class="p-2 border-r border-slate-300 font-bold text-center whitespace-nowrap">專案名稱</th>
+                            <th class="p-2 border-r border-slate-300 font-bold text-center whitespace-nowrap">專案時間</th>
+                            <th class="p-2 border-r border-slate-300 font-bold text-center whitespace-nowrap">備註與謝誌</th>
+                            <th class="p-2 border-r border-slate-300 font-bold text-center whitespace-nowrap">評分時間</th>
+                            <th class="p-2 font-bold text-center whitespace-nowrap">總分</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="align-middle text-slate-700">
+                            <!-- 作者 -->
+                            <td id="infoAuthor" class="p-2 border-r border-slate-200 font-medium whitespace-nowrap text-center">-</td>
+                            <!-- 專案名稱 -->
+                            <td id="infoProjectName" class="p-2 border-r border-slate-200 font-bold text-slate-800 break-words text-center">-</td>
+                            <!-- 專案時間 -->
+                            <td id="infoProjectTime" class="p-2 border-r border-slate-200 whitespace-nowrap text-center">-</td>
+                            <!-- 備註與謝誌 (已調整字體大小，移除 text-[14px]) -->
+                            <td id="infoDescription" class="p-2 border-r border-slate-200 break-words text-center">-</td>
+                            <!-- 評分時間 -->
+                            <td id="infoGradingTime" class="p-2 border-r border-slate-200 whitespace-nowrap text-slate-400 text-center">尚未評分</td>
+                            <!-- 總分 -->
+                            <td class="p-2 text-center bg-slate-50/50 whitespace-nowrap">
+                                <span id="infoTotalScore" class="text-[28px] font-bold text-red-600">-</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
 
         <div class="flex-1 p-6 overflow-y-auto bg-white border-b border-slate-200 relative">
-            <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center">
-                <i class="fa-solid fa-table-list text-indigo-500 mr-2"></i>自動評測資料集與結果
+            <h2 class="text-[20px] font-bold text-slate-800 mb-4 flex items-center">
+                <i class="fa-solid fa-table-list text-indigo-500 mr-2"></i>測試資料與評分結果
             </h2>
 
             <div class="rounded-lg border border-slate-300 shadow-sm overflow-hidden">
@@ -141,18 +161,9 @@
                     <tbody id="testDataBody" class="bg-white"></tbody>
                 </table>
             </div>
-            
-            <div id="gradingSummary" class="hidden mt-4 p-5 bg-indigo-50 border border-indigo-200 rounded-lg flex justify-between items-center shadow-sm">
-                <div class="text-slate-700 font-bold text-[18px]" id="gradingTime"></div>
-                <div class="text-[28px] font-bold text-indigo-900" id="gradingTotalScore"></div>
-            </div>
         </div>
 
-        <!-- 虛擬機顯示與控制台日誌 -->
         <div class="h-56 bg-slate-900 flex flex-col flex-none relative">
-            <div class="absolute right-0 top-0 opacity-[0.02] pointer-events-none transform scale-50 origin-top-right overflow-hidden border border-white">
-                <canvas id="scratch-stage" width="480" height="360" class="bg-white"></canvas>
-            </div>
             <div class="flex-1 p-3 overflow-y-auto font-mono text-[11px] z-10" id="consoleLog">
                 <div class="text-emerald-400 border-b border-slate-700 pb-1 mb-1 font-bold">>>> 系統日誌與執行狀態</div>
                 <div class="text-slate-400">系統準備就緒...</div>
@@ -178,11 +189,11 @@
         </div>
     </div>
 
-    <!-- 複製連結對話框 (解決 Canvas 阻擋複製的問題) -->
+    <!-- 複製連結對話框 (解決 Canvas iframe 限制) -->
     <div id="shareDialog" class="fixed inset-0 bg-slate-900/40 hidden flex items-center justify-center z-50 backdrop-blur-sm transition-opacity">
         <div class="bg-white p-6 rounded-xl shadow-2xl w-[90%] max-w-2xl border border-slate-200">
             <h3 class="text-[20px] font-bold text-slate-700 mb-2 flex items-center"><i class="fa-solid fa-link text-blue-500 mr-2"></i>取得專屬測驗連結</h3>
-            <p class="text-[16px] text-slate-500 mb-4">若在教學平台中無法自動複製，請手動複製下方網址，並提供給學生：</p>
+            <p class="text-[16px] text-slate-500 mb-4">請手動複製下方網址，並貼到教學平台提供給學生：</p>
             <div class="flex gap-2 mb-2">
                 <input type="text" id="shareUrlInput" class="w-full p-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-[16px] font-mono text-slate-600 bg-slate-50" readonly>
                 <button onclick="manualCopy()" id="manualCopyBtn" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition shadow-sm font-bold text-[18px] whitespace-nowrap">複製</button>
@@ -194,14 +205,12 @@
     </div>
 
     <script>
-        // 系統變數
         let vm;
-        let renderer;
         let storage;
         let isProjectLoaded = false;
         let isRunningTest = false;
         window.testInputQueue = []; 
-        let isConfigLocked = true; // 預設鎖定狀態
+        let isConfigLocked = true;
         
         // 預設測驗資料
         const defaultMockData = [
@@ -217,7 +226,6 @@
             outputs: [{ name: 'BMI值', type: 'output', mode: 'round1' }, { name: '體位', type: 'output', mode: 'text' }]
         };
 
-        // 初始化
         window.onload = function() {
             loadConfigFromUrl();
             updateConfigUI();
@@ -225,7 +233,6 @@
             setTimeout(initVM, 300); 
         };
 
-        // 從網址載入專屬設定
         function loadConfigFromUrl() {
             const params = new URLSearchParams(window.location.search);
             const configStr = params.get('config');
@@ -246,7 +253,6 @@
             }
         }
 
-        // 處理管理鎖定按鈕
         function handleManageClick() {
             if (isConfigLocked) {
                 document.getElementById('verifyInput').value = '';
@@ -263,10 +269,9 @@
         function closeVerifyDialog() { document.getElementById('verifyDialog').classList.add('hidden'); }
         function closeShareDialog() { document.getElementById('shareDialog').classList.add('hidden'); }
 
-        // 密碼驗證
         function verifyAndUnlock() {
             const val = document.getElementById('verifyInput').value;
-            // 'ampqYW4=' 是 'jjjan' 的 Base64 編碼
+            // 'jjjan' 的 Base64 編碼
             if (btoa(val) === 'ampqYW4=') {
                 isConfigLocked = false;
                 closeVerifyDialog();
@@ -279,7 +284,6 @@
             }
         }
 
-        // 產生並分享專屬連結
         function shareLink() {
             const pid = document.getElementById('projectUrl').value;
             const inCount = parseInt(document.getElementById('inputCount').value);
@@ -300,26 +304,14 @@
                 rows.push({ in: inVals, out: outVals });
             });
 
-            // 打包成 JSON
             const data = { p: pid, ic: inCount, oc: outCount, in: inputs, out: outputs, r: rows };
             const base64Str = btoa(encodeURIComponent(JSON.stringify(data)));
             
-            // 建立含參數網址
             const urlObj = new URL(window.location.href);
             urlObj.searchParams.set('config', base64Str);
             const shareUrl = urlObj.toString();
             
-            // 嘗試自動複製
-            try {
-                const tempInput = document.createElement("textarea");
-                tempInput.value = shareUrl;
-                document.body.appendChild(tempInput);
-                tempInput.select();
-                document.execCommand("copy");
-                document.body.removeChild(tempInput);
-            } catch(e) {}
-            
-            // 彈出視窗提供手動複製
+            // 將網址顯示在對話框中
             document.getElementById('shareUrlInput').value = shareUrl;
             document.getElementById('shareDialog').classList.remove('hidden');
             
@@ -328,7 +320,11 @@
             mBtn.classList.replace('bg-emerald-600', 'bg-blue-600');
             mBtn.classList.replace('hover:bg-emerald-700', 'hover:bg-blue-700');
 
-            setTimeout(() => document.getElementById('shareUrlInput').select(), 100);
+            setTimeout(() => {
+                const copyText = document.getElementById('shareUrlInput');
+                copyText.select();
+            }, 100);
+            
             log('已產生專屬測驗連結。', 'success');
         }
 
@@ -345,7 +341,6 @@
             } catch(err) { console.error("手動複製失敗", err); }
         }
 
-        // 套用介面鎖定/解鎖外觀
         function applyLockState() {
             const btn = document.getElementById('manageBtn');
             const shareBtn = document.getElementById('shareBtn');
@@ -366,7 +361,6 @@
             document.querySelectorAll('.delete-btn').forEach(btn => isConfigLocked ? btn.classList.add('hidden') : btn.classList.remove('hidden'));
         }
 
-        // 更新左側設定介面
         function updateConfigUI() {
             const inCount = parseInt(document.getElementById('inputCount').value);
             const outCount = parseInt(document.getElementById('outputCount').value);
@@ -392,7 +386,7 @@
                 const defaultVal = oldInputs[i] || (i === 0 ? '身高(cm)' : i === 1 ? '體重(kg)' : `輸入變數${i+1}`);
                 inContainer.innerHTML += `
                     <div class="flex gap-2 items-center input-row">
-                        <input type="text" id="cfgIn_${i}" value="${defaultVal}" onchange="generateTable()" class="var-input flex-1 text-[18px]" placeholder="Scratch 變數名稱">
+                        <input type="text" id="cfgIn_${i}" value="${defaultVal}" oninput="generateTable()" class="var-input flex-1 text-[18px]" placeholder="Scratch 變數名稱">
                         <button onclick="removeInput(${i})" class="delete-btn text-slate-400 hover:text-red-500 transition px-2 text-[18px]"><i class="fa-solid fa-trash-can"></i></button>
                     </div>`;
             }
@@ -405,7 +399,7 @@
                 
                 outContainer.innerHTML += `
                     <div class="flex gap-2 items-center output-row">
-                        <input type="text" id="cfgOut_${i}" value="${defaultVal}" onchange="generateTable()" class="var-input flex-1 text-[18px]" placeholder="變數名稱">
+                        <input type="text" id="cfgOut_${i}" value="${defaultVal}" oninput="generateTable()" class="var-input flex-1 text-[18px]" placeholder="變數名稱">
                         <select id="cfgMode_${i}" onchange="generateTable()" class="mode-select text-[18px] border border-slate-300 rounded p-1 bg-white outline-none text-slate-600 flex-none">
                             <option value="text" ${defaultMode === 'text' ? 'selected' : ''}>文字 (純文字)</option>
                             <option value="round0" ${defaultMode === 'round0' ? 'selected' : ''}>四捨五入 (整數)</option>
@@ -432,7 +426,7 @@
             for (let i = 0; i < count - 1; i++) {
                 inContainer.innerHTML += `
                     <div class="flex gap-2 items-center input-row">
-                        <input type="text" id="cfgIn_${i}" value="${oldInputs[i] || `輸入變數${i+1}`}" onchange="generateTable()" class="var-input flex-1 text-[18px]">
+                        <input type="text" id="cfgIn_${i}" value="${oldInputs[i] || `輸入變數${i+1}`}" oninput="generateTable()" class="var-input flex-1 text-[18px]">
                         <button onclick="removeInput(${i})" class="delete-btn text-slate-400 hover:text-red-500 transition px-2 text-[18px]"><i class="fa-solid fa-trash-can"></i></button>
                     </div>`;
             }
@@ -457,7 +451,7 @@
                 const defaultMode = (oldOutputs[i] && oldOutputs[i].mode) ? oldOutputs[i].mode : 'text';
                 outContainer.innerHTML += `
                     <div class="flex gap-2 items-center output-row">
-                        <input type="text" id="cfgOut_${i}" value="${(oldOutputs[i] && oldOutputs[i].name) || `輸出變數${i+1}`}" onchange="generateTable()" class="var-input flex-1 text-[18px]">
+                        <input type="text" id="cfgOut_${i}" value="${(oldOutputs[i] && oldOutputs[i].name) || `輸出變數${i+1}`}" oninput="generateTable()" class="var-input flex-1 text-[18px]">
                         <select id="cfgMode_${i}" onchange="generateTable()" class="mode-select text-[18px] border border-slate-300 rounded p-1 bg-white outline-none text-slate-600 flex-none">
                             <option value="text" ${defaultMode === 'text' ? 'selected' : ''}>文字 (純文字)</option>
                             <option value="round0" ${defaultMode === 'round0' ? 'selected' : ''}>四捨五入 (整數)</option>
@@ -521,13 +515,11 @@
                     tdHtml += `<td class="border-r border-slate-200 p-1"><input type="text" data-type="out" data-idx="${idx}" value="${val}" class="custom-input font-mono text-green-700 font-bold bg-green-50/20" onchange="generateTable()"></td>`;
                 });
                 currentConfig.outputs.forEach((cfg, idx) => { tdHtml += `<td id="actual_r${r}_c${idx}" class="border-r border-slate-200 p-2 text-center font-mono text-slate-400 bg-slate-50/50 text-[18px]">-</td>`; });
-                tdHtml += `<td id="status_r${r}" class="p-2 text-center text-slate-400 bg-slate-50/50 w-24 text-[18px]">-</td>`;
+                tdHtml += `<td id="status_r${r}" class="p-2 text-center text-slate-400 bg-slate-50/50 w-24 text-[18px] font-bold">-</td>`;
                 tr.innerHTML = tdHtml;
                 tbody.appendChild(tr);
             }
             
-            const summaryEl = document.getElementById('gradingSummary');
-            if(summaryEl) summaryEl.classList.add('hidden');
             applyLockState(); 
         }
 
@@ -558,11 +550,14 @@
             return null;
         }
 
-        // 啟動 Scratch 虛擬機 (極速無音效/無圖防護版)
         function initVM() {
             try {
                 if (typeof window.VirtualMachine === 'undefined') throw new Error('Scratch VM 未定義。');
                 const VMClass = resolveConstructor(window.VirtualMachine, 'VirtualMachine');
+                
+                // 完全阻斷音效引擎：強迫 VM 在初始化時找不到 AudioEngine
+                window.AudioEngine = null; 
+                
                 vm = new VMClass();
                 vm.setTurboMode(true);
                 
@@ -570,29 +565,24 @@
                     const StorageClass = resolveConstructor(window.ScratchStorage, 'ScratchStorage');
                     if (StorageClass) {
                         storage = new StorageClass();
-                        storage.projectHost = "https://projects.scratch.mit.edu/";
-                        storage.assetHost = "https://assets.scratch.mit.edu/";
-                        vm.attachStorage(storage);
                         
+                        // 使用 Scratch 官方伺服器 (避免外部 Proxy 封鎖)
                         storage.addWebSource(
-                            [storage.AssetType.ImageVector, storage.AssetType.ImageBitmap],
+                            [storage.AssetType.ImageVector, storage.AssetType.ImageBitmap, storage.AssetType.Sound],
                             asset => `https://assets.scratch.mit.edu/internalapi/asset/${asset.assetId}.${asset.dataFormat}/get/`
                         );
                         
-                        // ==========================================
-                        // 【終極防卡死機制】：攔截底層素材載入請求
-                        // ==========================================
+                        vm.attachStorage(storage);
+                        
+                        // 【終極防卡死攔截器】改寫底層 load 邏輯
                         const originalLoad = storage.load.bind(storage);
                         storage.load = async function(assetType, assetId, dataFormat) {
-                            
-                            // 1. 暴力阻斷音效：遇到音效，瞬間回傳 null！讓虛擬機以為音效不見了直接跳過。
-                            // 這是解決 HTTPS Github Pages 卡死問題的究極解法，因為我們根本不需要音效。
-                            if (assetType === storage.AssetType.Sound) {
+                            // 1. 如果是音效 (Sound)，直接回傳 null。不載入、不解碼，徹底解決 HTTPS 死鎖
+                            if (assetType && assetType.name === 'Sound') {
                                 return null; 
                             }
                             
-                            // 2. 對於圖片等其他素材，加上「3 秒強制超時」。
-                            // 評量工具看重的是邏輯運算，如果圖片抓太久（超過 3 秒），就直接放棄讓載入繼續。
+                            // 2. 如果是圖片，給予 3 秒等待，時間到直接放棄 (null)，確保不卡死
                             try {
                                 const loadPromise = originalLoad(assetType, assetId, dataFormat);
                                 const timeoutPromise = new Promise(resolve => setTimeout(() => resolve(null), 3000));
@@ -604,14 +594,6 @@
                     }
                 }
 
-                // 【重要】完全不掛載 ScratchAudio Engine！從根源切斷解碼器卡死的問題。
-
-                const canvas = document.getElementById('scratch-stage');
-                if (typeof window.ScratchRender !== 'undefined') {
-                    const RenderClass = resolveConstructor(window.ScratchRender, 'ScratchRender');
-                    if (RenderClass) { renderer = new RenderClass(canvas); vm.attachRenderer(renderer); }
-                }
-
                 if (typeof window.ScratchSVGRenderer !== 'undefined') {
                     const SvgObj = window.ScratchSVGRenderer;
                     let SVGRendererClass = typeof SvgObj === 'function' ? SvgObj : (SvgObj.SVGRenderer || SvgObj.default);
@@ -620,7 +602,7 @@
                     if (BitmapAdapterClass) vm.attachV2BitmapAdapter(new BitmapAdapterClass());
                 }
 
-                // 攔截詢問方塊，自動填入解答
+                // 處理 Scratch 原生「詢問」方塊
                 vm.runtime.on('QUESTION', (question) => {
                     if (question !== null) {
                         let answer = "";
@@ -652,7 +634,6 @@
             const input = document.getElementById('projectUrl').value.trim();
             const projectId = getProjectId(input);
             const loadBtn = document.getElementById('loadBtn');
-            const projectTitle = document.getElementById('projectTitle');
             const runBtn = document.getElementById('runBtn');
 
             if (!projectId) { log('無效的專案連結', 'error'); return false; }
@@ -678,11 +659,38 @@
                 if (metadata.history) {
                     let d = new Date(metadata.history.shared || metadata.history.modified || metadata.history.created);
                     if (!isNaN(d.getTime())) {
-                        pDateStr = `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日 ${String(d.getHours()).padStart(2, '0')}時${String(d.getMinutes()).padStart(2, '0')}分${String(d.getSeconds()).padStart(2, '0')}秒`;
+                        pDateStr = `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
                     }
                 }
-                projectTitle.innerText = `作者: ${pAuthor} | 專案: ${pTitle} | 日期: ${pDateStr}`;
-                projectTitle.title = projectTitle.innerText; 
+                
+                // 解析備註與謝誌 (description)
+                let pDescription = '';
+                if (metadata.description && metadata.description.trim() !== '') {
+                    // 將多行文字轉換為單行，以空白分隔
+                    pDescription = metadata.description.trim().replace(/\n/g, ' ');
+                }
+                
+                // 更新表格資訊
+                document.getElementById('infoAuthor').innerText = pAuthor;
+                document.getElementById('infoProjectName').innerText = pTitle;
+                document.getElementById('infoProjectName').title = pTitle;
+                document.getElementById('infoProjectTime').innerText = pDateStr;
+                
+                const descEl = document.getElementById('infoDescription');
+                if (pDescription) {
+                    descEl.innerText = pDescription.length > 50 ? pDescription.substring(0, 50) + '...' : pDescription;
+                    descEl.title = pDescription;
+                } else {
+                    descEl.innerText = '';
+                    descEl.title = '';
+                }
+                
+                document.getElementById('infoGradingTime').innerText = '尚未評分';
+                document.getElementById('infoGradingTime').classList.add('text-slate-400');
+                document.getElementById('infoGradingTime').classList.remove('text-slate-700');
+                document.getElementById('infoTotalScore').innerText = '-';
+                
+                document.getElementById('infoTableContainer').classList.remove('hidden');
                 
                 log(`下載專案內容...`);
                 let projectBuffer = null;
@@ -706,7 +714,7 @@
                     
                     const loadPromise = vm.loadProject(projectBuffer);
                     const timeoutPromise = new Promise((_, reject) => {
-                        setTimeout(() => reject(new Error("虛擬機載入超時 (異常狀態)")), 15000);
+                        setTimeout(() => reject(new Error("虛擬機載入超時 (可能原因：專案包含過大的無法解析音效、或代理伺服器無回應)")), 15000);
                     });
                     
                     await Promise.race([loadPromise, timeoutPromise]);
@@ -723,7 +731,6 @@
             } catch (e) {
                 log(`載入失敗: ${(e && e.message) ? e.message : "未知錯誤"}`, 'error');
                 console.error("專案載入詳細錯誤:", e);
-                projectTitle.innerText = '載入失敗';
                 return false;
             } finally {
                 loadBtn.disabled = false;
@@ -731,7 +738,6 @@
             }
         }
 
-        // 強制注入 Scratch 變數
         function injectVariables(inputValues) {
             if (vm && vm.runtime && vm.runtime.targets) {
                 vm.runtime.targets.forEach(target => {
@@ -746,7 +752,6 @@
             }
         }
 
-        // 讀取 Scratch 變數結果
         function extractVariables() {
             let results = new Array(currentConfig.outputs.length).fill("");
             if (vm && vm.runtime && vm.runtime.targets) {
@@ -843,21 +848,25 @@
                     const statusCell = document.getElementById(`status_r${i}`);
                     
                     if (rowScore === expectedOutputs.length * 10) {
-                        statusCell.innerHTML = `<span class="bg-green-100 text-green-700 px-3 py-1.5 rounded-full font-bold border border-green-200 shadow-sm">${rowScore}分</span>`;
-                        statusCell.className = "p-2 text-center bg-green-50/30 text-[18px]";
+                        statusCell.innerHTML = `<span class="text-green-700">${rowScore}</span>`;
+                        statusCell.className = "p-2 text-center bg-green-50/30 text-[18px] font-bold";
                     } else if (rowScore > 0) {
-                        statusCell.innerHTML = `<span class="bg-amber-100 text-amber-700 px-3 py-1.5 rounded-full font-bold border border-amber-200 shadow-sm">${rowScore}分</span>`;
-                        statusCell.className = "p-2 text-center bg-amber-50/30 text-[18px]";
+                        statusCell.innerHTML = `<span class="text-amber-700">${rowScore}</span>`;
+                        statusCell.className = "p-2 text-center bg-amber-50/30 text-[18px] font-bold";
                     } else {
-                        statusCell.innerHTML = `<span class="bg-red-100 text-red-700 px-3 py-1.5 rounded-full font-bold border border-red-200 shadow-sm">0分</span>`;
-                        statusCell.className = "p-2 text-center bg-red-50/30 text-[18px]";
+                        statusCell.innerHTML = `<span class="text-red-700">0</span>`;
+                        statusCell.className = "p-2 text-center bg-red-50/30 text-[18px] font-bold";
                     }
                 }
 
                 const now = new Date();
-                document.getElementById('gradingTime').innerText = `評分時間：${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日 ${String(now.getHours()).padStart(2, '0')}時${String(now.getMinutes()).padStart(2, '0')}分${String(now.getSeconds()).padStart(2, '0')}秒`;
-                document.getElementById('gradingTotalScore').innerHTML = `總分：<span class="text-[42px] text-red-600 mx-2">${totalScore}</span> 分`;
-                document.getElementById('gradingSummary').classList.remove('hidden');
+                const gradingTimeStr = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+                
+                // 更新表格 內的評分結果
+                document.getElementById('infoGradingTime').innerText = gradingTimeStr;
+                document.getElementById('infoGradingTime').classList.remove('text-slate-400');
+                document.getElementById('infoGradingTime').classList.add('text-slate-700');
+                document.getElementById('infoTotalScore').innerText = `${totalScore}`;
 
                 log(`評分執行完畢，最終得分：${totalScore} 分`, 'info');
 
