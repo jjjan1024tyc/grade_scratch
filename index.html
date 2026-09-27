@@ -588,16 +588,17 @@
                     if (StorageClass) {
                         storage = new StorageClass();
                         
-                        // 強制覆蓋底層預設的官方伺服器路徑，徹底切斷與 mit 伺服器的連線，解決 GitHub CORS 問題
-                        storage.projectHost = "https://projects.turbowarp.org/";
-                        storage.assetHost = "https://trampoline.turbowarp.org/assets/";
+                        // 【關鍵修正】移除會阻擋 GitHub Pages 的 Turbowarp 代理
+                        // 改回使用完全開放 CORS 的 Scratch 官方素材伺服器
+                        storage.projectHost = "https://projects.scratch.mit.edu/";
+                        storage.assetHost = "https://assets.scratch.mit.edu/";
                         
                         vm.attachStorage(storage);
                         
-                        // 統一使用 Turbowarp 代理伺服器來載入所有圖片與音效素材
+                        // 統一使用官方伺服器來載入所有圖片與音效素材
                         storage.addWebSource(
                             [storage.AssetType.ImageVector, storage.AssetType.ImageBitmap, storage.AssetType.Sound],
-                            asset => `https://trampoline.turbowarp.org/assets/${asset.assetId}.${asset.dataFormat}`
+                            asset => `https://assets.scratch.mit.edu/internalapi/asset/${asset.assetId}.${asset.dataFormat}/get/`
                         );
                     }
                 }
@@ -663,6 +664,13 @@
 
             if (!projectId) { log('無效的專案連結', 'error'); return false; }
             if (!vm) { log('VM 尚未準備好', 'error'); return false; }
+
+            // 【關鍵修正】喚醒音效引擎，避免瀏覽器的 Autoplay 政策造成卡死
+            if (vm.runtime && vm.runtime.audioEngine && vm.runtime.audioEngine.audioContext) {
+                if (vm.runtime.audioEngine.audioContext.state === 'suspended') {
+                    try { await vm.runtime.audioEngine.audioContext.resume(); } catch (e) {}
+                }
+            }
 
             loadBtn.disabled = true;
             loadBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
