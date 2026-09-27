@@ -5,11 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>通用型 Scratch 自動評量系統</title>
     
-    <!-- 載入 Tailwind CSS 框架 -->
     <script src="https://cdn.tailwindcss.com"></script>
     
     <script>
-        // 全域錯誤處理機制
         window.scriptLoadErrors = [];
         function handleScriptError(script) {
             const src = script.src;
@@ -34,54 +32,23 @@
         }
     </script>
 
-    <!-- 引入 Scratch 核心庫 -->
     <script src="https://cdn.jsdelivr.net/npm/scratch-audio@0.1.0/dist/web/scratch-audio.js" crossorigin="anonymous" onerror="handleScriptError(this)"></script>
     <script src="https://cdn.jsdelivr.net/npm/scratch-vm/dist/web/scratch-vm.min.js" crossorigin="anonymous" onerror="handleScriptError(this)"></script>
     <script src="https://cdn.jsdelivr.net/npm/scratch-storage/dist/web/scratch-storage.min.js" crossorigin="anonymous" onerror="handleScriptError(this)"></script>
     <script src="https://cdn.jsdelivr.net/npm/scratch-svg-renderer/dist/web/scratch-svg-renderer.js" crossorigin="anonymous" onerror="handleScriptError(this)"></script>
     <script src="https://cdn.jsdelivr.net/npm/scratch-render/dist/web/scratch-render.min.js" crossorigin="anonymous" onerror="handleScriptError(this)"></script>
     
-    <!-- 引入 FontAwesome 圖示 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
 
     <style>
         body { font-family: 'Noto Sans TC', 'Inter', sans-serif; background-color: #f8fafc; }
-        
         .log-entry { font-family: 'Courier New', Courier, monospace; font-size: 0.8rem; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        
-        /* 表格輸入框與設定框樣式 */
-        .custom-input {
-            width: 100%;
-            min-width: 0;
-            padding: 6px 8px;
-            text-align: center;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            outline: none;
-            transition: all 0.2s;
-            font-family: inherit;
-            font-size: inherit; 
-        }
-        .custom-input:focus {
-            border-color: #6366f1;
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
-        }
-        
-        .var-input {
-            width: 100%;
-            padding: 6px 8px;
-            border: 1px solid #cbd5e1;
-            border-radius: 4px;
-            font-size: 18px;
-            outline: none;
-        }
+        .custom-input { width: 100%; min-width: 0; padding: 6px 8px; text-align: center; border: 1px solid #d1d5db; border-radius: 6px; outline: none; transition: all 0.2s; font-family: inherit; font-size: inherit; }
+        .custom-input:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2); }
+        .var-input { width: 100%; padding: 6px 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 18px; outline: none; }
         .var-input:focus { border-color: #8b5cf6; box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2); }
-        
-        /* 唯讀/鎖定狀態樣式 */
         .custom-input:disabled { background-color: transparent !important; border-color: transparent; box-shadow: none; cursor: default; }
-        .var-input:disabled, .mode-select:disabled { background-color: #f1f5f9; color: #94a3b8; border-color: #e2e8f0; cursor: not-allowed; }
-        
-        /* 捲軸美化 */
+        .var-input:disabled, .mode-select:disabled { background-color: transparent !important; color: #475569; border-color: transparent; box-shadow: none; cursor: default; appearance: none; -webkit-appearance: none; padding-left: 0;}
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #f1f5f9; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
@@ -90,31 +57,30 @@
 </head>
 <body class="h-screen flex flex-col xl:flex-row overflow-hidden text-slate-800">
 
-    <!-- 左側：設定面板 (寬度 25%) -->
     <div class="w-full xl:w-3/12 bg-white p-6 shadow-xl overflow-y-auto flex flex-col gap-6 z-10 border-r border-slate-200">
         <div class="border-b pb-4">
-            <div class="flex justify-between items-center mb-1">
-                <h1 class="text-2xl font-bold text-slate-800"><i class="fa-solid fa-microchip mr-2 text-indigo-500"></i>Scratch評量工具</h1>
-                <div class="flex gap-2">
-                    <button onclick="shareLink()" id="shareBtn" class="hidden bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg text-[18px] transition font-medium flex justify-center items-center gap-2 shadow-sm whitespace-nowrap">
-                        <i class="fa-solid fa-link"></i> <span>複製連結</span>
-                    </button>
-                    <button onclick="handleManageClick()" id="manageBtn" class="bg-slate-500 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg text-[18px] transition font-medium flex justify-center items-center gap-2 shadow-sm whitespace-nowrap">
-                        <i class="fa-solid fa-gear"></i> <span>管理</span>
-                    </button>
-                </div>
+            <div class="flex items-center mb-2">
+                <h1 class="text-[22px] font-bold text-slate-800 flex-1 flex items-center">
+                    <i class="fa-solid fa-microchip mr-2 text-indigo-500"></i>Scratch評量工具
+                </h1>
+                <button onclick="handleManageClick()" id="manageBtn" class="bg-slate-500 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg text-[18px] transition font-medium flex justify-center items-center gap-2 shadow-sm whitespace-nowrap">
+                    <i class="fa-solid fa-gear"></i> <span>管理</span>
+                </button>
             </div>
-            <p class="text-sm text-slate-500">先載入Scratch專案，再開始自動評分</p>
+            <div class="flex justify-between items-center">
+                <p class="text-[15px] text-slate-500">先載入Scratch專案，再開始自動評分</p>
+                <button onclick="shareLink()" id="shareBtn" class="hidden bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg text-[16px] transition font-medium flex justify-center items-center gap-2 shadow-sm whitespace-nowrap">
+                    <i class="fa-solid fa-link"></i> <span>複製連結</span>
+                </button>
+            </div>
         </div>
 
-        <!-- 變數與參數設定 -->
         <div class="space-y-4 bg-violet-50 p-4 rounded-lg border border-violet-200">
             <div class="flex justify-between items-center mb-2">
                 <label class="block text-[18px] font-bold text-violet-900">設定Scratch變數名稱</label>
             </div>
             
             <div class="flex flex-col gap-4">
-                <!-- 輸入變數設定 -->
                 <div class="bg-white p-3 rounded border border-violet-100 shadow-sm">
                     <div class="flex justify-between items-center mb-2">
                         <span class="text-[18px] font-bold text-slate-700">Scratch 輸入變數</span>
@@ -125,12 +91,9 @@
                             <option value="4">4 個輸入</option>
                         </select>
                     </div>
-                    <div id="inputConfigContainer" class="flex flex-col gap-2">
-                        <!-- 動態產生 -->
-                    </div>
+                    <div id="inputConfigContainer" class="flex flex-col gap-2"></div>
                 </div>
 
-                <!-- 輸出變數設定 -->
                 <div class="bg-white p-3 rounded border border-violet-100 shadow-sm">
                     <div class="flex justify-between items-center mb-2">
                         <span class="text-[18px] font-bold text-slate-700">Scratch 輸出變數</span>
@@ -141,20 +104,14 @@
                             <option value="4">4 個輸出</option>
                         </select>
                     </div>
-                    <div id="outputConfigContainer" class="flex flex-col gap-2">
-                        <!-- 動態產生 -->
-                    </div>
+                    <div id="outputConfigContainer" class="flex flex-col gap-2"></div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 右側：統一資料表與執行顯示區域 (寬度 75%) -->
     <div class="w-full xl:w-9/12 bg-slate-100 flex flex-col h-full overflow-hidden relative">
-        
-        <!-- 頂部操作列 (載入專案與執行測試) -->
         <div class="bg-white p-4 border-b border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4 z-20 shadow-sm">
-            <!-- 專案載入區 -->
             <div class="flex items-center gap-2 w-full md:w-auto">
                 <label class="text-[18px] font-bold text-slate-700 whitespace-nowrap"><i class="fa-solid fa-cloud-arrow-down text-slate-400 mr-1"></i> 載入Scratch專案</label>
                 <input type="text" id="projectUrl" placeholder="例如: 1263904376" class="w-48 p-2 border border-slate-300 rounded focus:ring-2 focus:ring-indigo-500 focus:outline-none text-[18px] font-mono" value="1263904376">
@@ -164,15 +121,13 @@
                 <span id="projectTitle" class="text-[18px] text-slate-600 font-medium truncate flex-1 ml-2"></span>
             </div>
             
-            <!-- 執行按鈕與狀態切換 -->
             <div class="w-full md:w-auto flex gap-2">
-                <button onclick="runBatchTest()" id="runBtn" disabled class="w-full bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-300 disabled:cursor-not-allowed disabled:shadow-none text-white font-bold py-2 px-6 rounded-lg shadow-md transition flex justify-center items-center gap-2 text-lg">
+                <button onclick="runBatchTest()" id="runBtn" disabled class="w-full bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold py-2 px-6 rounded-lg shadow-md transition flex justify-center items-center gap-2 text-[18px]">
                     <i class="fa-solid fa-play"></i> 開始自動評分
                 </button>
             </div>
         </div>
 
-        <!-- 上半部：統一測試資料集與評分表格 -->
         <div class="flex-1 p-6 overflow-y-auto bg-white border-b border-slate-200 relative">
             <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center">
                 <i class="fa-solid fa-table-list text-indigo-500 mr-2"></i>自動評測資料集與結果
@@ -180,33 +135,25 @@
 
             <div class="rounded-lg border border-slate-300 shadow-sm overflow-hidden">
                 <table class="w-full text-[18px] border-collapse table-fixed">
-                    <thead id="tableHeader">
-                        <!-- 動態產生表頭 -->
-                    </thead>
-                    <tbody id="testDataBody" class="bg-white">
-                        <!-- 動態產生內容列 -->
-                    </tbody>
+                    <thead id="tableHeader"></thead>
+                    <tbody id="testDataBody" class="bg-white"></tbody>
                 </table>
             </div>
             
-            <!-- 新增：評分結果與時間顯示區塊 -->
             <div id="gradingSummary" class="hidden mt-4 p-5 bg-indigo-50 border border-indigo-200 rounded-lg flex justify-between items-center shadow-sm">
-                <div class="text-slate-700 font-bold text-lg" id="gradingTime"></div>
-                <div class="text-2xl font-bold text-indigo-900" id="gradingTotalScore"></div>
+                <div class="text-slate-700 font-bold text-[18px]" id="gradingTime"></div>
+                <div class="text-[28px] font-bold text-indigo-900" id="gradingTotalScore"></div>
             </div>
         </div>
 
-        <!-- 下半部：隱藏的 Canvas 與 系統日誌 -->
         <div class="h-56 bg-slate-900 flex flex-col flex-none relative">
             <div class="absolute right-0 top-0 opacity-[0.02] pointer-events-none transform scale-50 origin-top-right overflow-hidden border border-white">
                 <canvas id="scratch-stage" width="480" height="360" class="bg-white"></canvas>
             </div>
-
             <div class="flex-1 p-3 overflow-y-auto font-mono text-[11px] z-10" id="consoleLog">
                 <div class="text-emerald-400 border-b border-slate-700 pb-1 mb-1 font-bold">>>> 系統日誌與執行狀態</div>
                 <div class="text-slate-400">系統準備就緒...</div>
             </div>
-            
             <div class="bg-slate-950 text-slate-500 text-[10px] p-1.5 px-3 flex justify-between items-center border-t border-slate-800 z-10">
                 <div id="statusText">等待指令</div>
                 <div class="text-slate-600"><i class="fa-solid fa-circle text-[8px] text-emerald-500 mr-1"></i>VM Ready</div>
@@ -214,7 +161,6 @@
         </div>
     </div>
 
-    <!-- 狀態驗證對話框 (預設隱藏) -->
     <div id="verifyDialog" class="fixed inset-0 bg-slate-900/40 hidden flex items-center justify-center z-50 backdrop-blur-sm transition-opacity">
         <div class="bg-white p-6 rounded-xl shadow-2xl w-80 border border-slate-200">
             <h3 class="text-lg font-bold text-slate-700 mb-2 flex items-center"><i class="fa-solid fa-lock text-slate-400 mr-2"></i>解鎖設定面板</h3>
@@ -228,7 +174,6 @@
         </div>
     </div>
 
-    <!-- 分享連結對話框 (解決 iframe 剪貼簿封鎖問題) -->
     <div id="shareDialog" class="fixed inset-0 bg-slate-900/40 hidden flex items-center justify-center z-50 backdrop-blur-sm transition-opacity">
         <div class="bg-white p-6 rounded-xl shadow-2xl w-[90%] max-w-2xl border border-slate-200">
             <h3 class="text-lg font-bold text-slate-700 mb-2 flex items-center"><i class="fa-solid fa-link text-blue-500 mr-2"></i>取得專屬測驗連結</h3>
@@ -250,7 +195,7 @@
         let isProjectLoaded = false;
         let isRunningTest = false;
         window.testInputQueue = []; 
-        let isConfigLocked = true; // 預設為鎖定狀態
+        let isConfigLocked = true;
         
         const defaultMockData = [
             { in: ["170", "40"], out: ["13.8", "過輕"] },
@@ -261,14 +206,8 @@
         ];
         
         let currentConfig = {
-            inputs: [
-                { name: '身高(cm)', type: 'input' }, 
-                { name: '體重(kg)', type: 'input' }
-            ],
-            outputs: [
-                { name: 'BMI值', type: 'output', mode: 'round1' }, 
-                { name: '體位', type: 'output', mode: 'text' }
-            ]
+            inputs: [{ name: '身高(cm)', type: 'input' }, { name: '體重(kg)', type: 'input' }],
+            outputs: [{ name: 'BMI值', type: 'output', mode: 'round1' }, { name: '體位', type: 'output', mode: 'text' }]
         };
 
         window.onload = function() {
@@ -278,26 +217,18 @@
             setTimeout(initVM, 300); 
         };
 
-        // --- 網址參數設定載入邏輯 ---
         function loadConfigFromUrl() {
             const params = new URLSearchParams(window.location.search);
             const configStr = params.get('config');
             if (configStr) {
                 try {
                     const data = JSON.parse(decodeURIComponent(atob(configStr)));
-                    
                     if (data.p) document.getElementById('projectUrl').value = data.p;
-                    
                     document.getElementById('inputCount').value = data.ic;
                     document.getElementById('outputCount').value = data.oc;
-                    
-                    // 暫存解析後的設定，交由 updateConfigUI 繪製
                     window.importedConfig = data;
-                    
-                    // 覆蓋預設的測試資料集
                     defaultMockData.length = 0; 
                     data.r.forEach(row => defaultMockData.push(row));
-                    
                     log('已成功載入專屬測驗設定！', 'success');
                 } catch(e) {
                     console.error("設定載入失敗", e);
@@ -306,7 +237,6 @@
             }
         }
 
-        // --- 狀態切換與驗證邏輯 ---
         function handleManageClick() {
             if (isConfigLocked) {
                 document.getElementById('verifyInput').value = '';
@@ -320,14 +250,12 @@
             }
         }
 
-        function closeVerifyDialog() {
-            document.getElementById('verifyDialog').classList.add('hidden');
-        }
+        function closeVerifyDialog() { document.getElementById('verifyDialog').classList.add('hidden'); }
+        function closeShareDialog() { document.getElementById('shareDialog').classList.add('hidden'); }
 
         function verifyAndUnlock() {
             const val = document.getElementById('verifyInput').value;
-            // 基礎編碼對應檢查，避免直接寫明文字
-            if (btoa(val) === 'ampqYW4=') {
+            if (btoa(val) === 'ampqYW4=') { // jjjan
                 isConfigLocked = false;
                 closeVerifyDialog();
                 applyLockState();
@@ -339,43 +267,33 @@
             }
         }
 
-        // --- 複製專屬連結邏輯 ---
         function shareLink() {
             const pid = document.getElementById('projectUrl').value;
             const inCount = parseInt(document.getElementById('inputCount').value);
             const outCount = parseInt(document.getElementById('outputCount').value);
             
             const inputs = [];
-            for (let i = 0; i < inCount; i++) {
-                inputs.push(document.getElementById(`cfgIn_${i}`).value);
-            }
+            for (let i = 0; i < inCount; i++) inputs.push(document.getElementById(`cfgIn_${i}`).value);
             
             const outputs = [];
             for (let i = 0; i < outCount; i++) {
-                outputs.push({
-                    n: document.getElementById(`cfgOut_${i}`).value,
-                    m: document.getElementById(`cfgMode_${i}`).value
-                });
+                outputs.push({ n: document.getElementById(`cfgOut_${i}`).value, m: document.getElementById(`cfgMode_${i}`).value });
             }
             
             const rows = [];
-            const existingRows = document.querySelectorAll('#testDataBody tr');
-            existingRows.forEach(row => {
+            document.querySelectorAll('#testDataBody tr').forEach(row => {
                 const inVals = Array.from(row.querySelectorAll('input[data-type="in"]')).map(el => el.value);
                 const outVals = Array.from(row.querySelectorAll('input[data-type="out"]')).map(el => el.value);
                 rows.push({ in: inVals, out: outVals });
             });
 
-            // 將所有資料打包成物件並加密
             const data = { p: pid, ic: inCount, oc: outCount, in: inputs, out: outputs, r: rows };
             const base64Str = btoa(encodeURIComponent(JSON.stringify(data)));
             
-            // 產生包含參數的完整 URL
             const urlObj = new URL(window.location.href);
             urlObj.searchParams.set('config', base64Str);
             const shareUrl = urlObj.toString();
             
-            // 嘗試在背景自動複製 (部分環境會成功)
             try {
                 const tempInput = document.createElement("textarea");
                 tempInput.value = shareUrl;
@@ -385,44 +303,29 @@
                 document.body.removeChild(tempInput);
             } catch(e) {}
             
-            // 彈出手動複製對話框，確保 iframe 內也能拿到連結
             document.getElementById('shareUrlInput').value = shareUrl;
             document.getElementById('shareDialog').classList.remove('hidden');
             
-            // 重置對話框內的複製按鈕狀態
             const mBtn = document.getElementById('manualCopyBtn');
             mBtn.innerText = '複製';
             mBtn.classList.replace('bg-emerald-600', 'bg-blue-600');
             mBtn.classList.replace('hover:bg-emerald-700', 'hover:bg-blue-700');
 
-            // 自動選取文字框，方便使用者直接按 Ctrl+C
-            setTimeout(() => {
-                document.getElementById('shareUrlInput').select();
-            }, 100);
-            
-            log('已產生專屬測驗連結對話框。', 'success');
+            setTimeout(() => document.getElementById('shareUrlInput').select(), 100);
+            log('已產生專屬測驗連結。', 'success');
         }
 
-        // 新增：關閉分享對話框
-        function closeShareDialog() {
-            document.getElementById('shareDialog').classList.add('hidden');
-        }
-
-        // 新增：對話框內的手動複製按鈕邏輯
         function manualCopy() {
             const copyText = document.getElementById('shareUrlInput');
             copyText.select();
             copyText.setSelectionRange(0, 99999); 
-            
             try {
                 document.execCommand("copy");
                 const mBtn = document.getElementById('manualCopyBtn');
                 mBtn.innerText = '已複製!';
                 mBtn.classList.replace('bg-blue-600', 'bg-emerald-600');
                 mBtn.classList.replace('hover:bg-blue-700', 'hover:bg-emerald-700');
-            } catch(err) {
-                console.error("手動複製失敗", err);
-            }
+            } catch(err) { console.error("手動複製失敗", err); }
         }
 
         function applyLockState() {
@@ -441,44 +344,27 @@
             document.getElementById('inputCount').disabled = isConfigLocked;
             document.getElementById('outputCount').disabled = isConfigLocked;
 
-            const leftInputs = document.querySelectorAll('#inputConfigContainer input, #outputConfigContainer input, #outputConfigContainer select');
-            leftInputs.forEach(el => el.disabled = isConfigLocked);
-
-            const rightInputs = document.querySelectorAll('#testDataBody input');
-            rightInputs.forEach(el => el.disabled = isConfigLocked);
-
-            // 鎖定時隱藏刪除按鈕，保持介面乾淨
-            const deleteBtns = document.querySelectorAll('.delete-btn');
-            deleteBtns.forEach(btn => {
-                if (isConfigLocked) {
-                    btn.classList.add('hidden');
-                } else {
-                    btn.classList.remove('hidden');
-                }
-            });
+            document.querySelectorAll('#inputConfigContainer input, #outputConfigContainer input, #outputConfigContainer select, #testDataBody input').forEach(el => el.disabled = isConfigLocked);
+            document.querySelectorAll('.delete-btn').forEach(btn => isConfigLocked ? btn.classList.add('hidden') : btn.classList.remove('hidden'));
         }
 
         function updateConfigUI() {
             const inCount = parseInt(document.getElementById('inputCount').value);
             const outCount = parseInt(document.getElementById('outputCount').value);
-            
             const inContainer = document.getElementById('inputConfigContainer');
             const outContainer = document.getElementById('outputConfigContainer');
             
             const oldInputs = [];
             const oldOutputs = [];
             
-            // 判斷是否有從 URL 載入的暫存設定
             if (window.importedConfig) {
                 window.importedConfig.in.forEach(n => oldInputs.push(n));
                 window.importedConfig.out.forEach(o => oldOutputs.push({ name: o.n, mode: o.m }));
-                window.importedConfig = null; // 讀取完畢後清空
+                window.importedConfig = null; 
             } else {
                 Array.from(inContainer.querySelectorAll('input.var-input')).forEach(el => oldInputs.push(el.value));
                 outContainer.querySelectorAll('.output-row').forEach(row => {
-                    const inp = row.querySelector('.var-input').value;
-                    const sel = row.querySelector('.mode-select').value;
-                    oldOutputs.push({ name: inp, mode: sel });
+                    oldOutputs.push({ name: row.querySelector('.var-input').value, mode: row.querySelector('.mode-select').value });
                 });
             }
 
@@ -487,10 +373,9 @@
                 const defaultVal = oldInputs[i] || (i === 0 ? '身高(cm)' : i === 1 ? '體重(kg)' : `輸入變數${i+1}`);
                 inContainer.innerHTML += `
                     <div class="flex gap-2 items-center input-row">
-                        <input type="text" id="cfgIn_${i}" value="${defaultVal}" onchange="generateTable()" class="var-input flex-1" placeholder="Scratch 變數名稱">
-                        <button onclick="removeInput(${i})" class="delete-btn text-slate-400 hover:text-red-500 transition px-1" title="刪除此變數"><i class="fa-solid fa-trash-can"></i></button>
-                    </div>
-                `;
+                        <input type="text" id="cfgIn_${i}" value="${defaultVal}" onchange="generateTable()" class="var-input flex-1 text-[18px]" placeholder="Scratch 變數名稱">
+                        <button onclick="removeInput(${i})" class="delete-btn text-slate-400 hover:text-red-500 transition px-1"><i class="fa-solid fa-trash-can"></i></button>
+                    </div>`;
             }
 
             outContainer.innerHTML = '';
@@ -501,94 +386,70 @@
                 
                 outContainer.innerHTML += `
                     <div class="flex gap-2 items-center output-row">
-                        <input type="text" id="cfgOut_${i}" value="${defaultVal}" onchange="generateTable()" class="var-input flex-1" placeholder="變數名稱">
-                        <select id="cfgMode_${i}" onchange="generateTable()" class="mode-select text-[18px] border border-slate-300 rounded p-1 bg-white outline-none text-slate-600">
+                        <input type="text" id="cfgOut_${i}" value="${defaultVal}" onchange="generateTable()" class="var-input flex-1 text-[18px]" placeholder="變數名稱">
+                        <select id="cfgMode_${i}" onchange="generateTable()" class="mode-select text-[18px] border border-slate-300 rounded p-1 bg-white outline-none text-slate-600 flex-none">
                             <option value="text" ${defaultMode === 'text' ? 'selected' : ''}>文字 (純文字)</option>
                             <option value="round0" ${defaultMode === 'round0' ? 'selected' : ''}>四捨五入 (整數)</option>
                             <option value="round1" ${defaultMode === 'round1' ? 'selected' : ''}>四捨五入 (小數 1 位)</option>
                             <option value="round2" ${defaultMode === 'round2' ? 'selected' : ''}>四捨五入 (小數 2 位)</option>
                         </select>
-                        <button onclick="removeOutput(${i})" class="delete-btn text-slate-400 hover:text-red-500 transition px-1" title="刪除此變數"><i class="fa-solid fa-trash-can"></i></button>
-                    </div>
-                `;
+                        <button onclick="removeOutput(${i})" class="delete-btn text-slate-400 hover:text-red-500 transition px-1"><i class="fa-solid fa-trash-can"></i></button>
+                    </div>`;
             }
-            
-            applyLockState(); // 確保新生成的元素套用目前狀態
-            generateTable(); // 自動同步更新表格
+            applyLockState(); 
+            generateTable(); 
         }
 
-        // 新增：處理單一輸入變數刪除
         function removeInput(index) {
             if (isConfigLocked) return;
             const select = document.getElementById('inputCount');
             let count = parseInt(select.value);
-            if (count <= 1) {
-                log('至少需保留一個輸入變數', 'warn');
-                return;
-            }
-            
+            if (count <= 1) { log('至少需保留一個輸入變數', 'warn'); return; }
             const inContainer = document.getElementById('inputConfigContainer');
             const oldInputs = Array.from(inContainer.querySelectorAll('input.var-input')).map(el => el.value);
             oldInputs.splice(index, 1);
-            
             select.value = count - 1;
-            
             inContainer.innerHTML = '';
             for (let i = 0; i < count - 1; i++) {
-                const defaultVal = oldInputs[i] || `輸入變數${i+1}`;
                 inContainer.innerHTML += `
                     <div class="flex gap-2 items-center input-row">
-                        <input type="text" id="cfgIn_${i}" value="${defaultVal}" onchange="generateTable()" class="var-input flex-1" placeholder="Scratch 變數名稱">
-                        <button onclick="removeInput(${i})" class="delete-btn text-slate-400 hover:text-red-500 transition px-1" title="刪除此變數"><i class="fa-solid fa-trash-can"></i></button>
-                    </div>
-                `;
+                        <input type="text" id="cfgIn_${i}" value="${oldInputs[i] || `輸入變數${i+1}`}" onchange="generateTable()" class="var-input flex-1 text-[18px]">
+                        <button onclick="removeInput(${i})" class="delete-btn text-slate-400 hover:text-red-500 transition px-1"><i class="fa-solid fa-trash-can"></i></button>
+                    </div>`;
             }
             applyLockState();
-            generateTable(); // 自動同步更新表格
+            generateTable();
         }
 
-        // 新增：處理單一輸出變數刪除
         function removeOutput(index) {
             if (isConfigLocked) return;
             const select = document.getElementById('outputCount');
             let count = parseInt(select.value);
-            if (count <= 1) {
-                log('至少需保留一個預期輸出', 'warn');
-                return;
-            }
-            
+            if (count <= 1) { log('至少需保留一個預期輸出', 'warn'); return; }
             const outContainer = document.getElementById('outputConfigContainer');
             const oldOutputs = [];
             outContainer.querySelectorAll('.output-row').forEach(row => {
-                const inp = row.querySelector('.var-input').value;
-                const sel = row.querySelector('.mode-select').value;
-                oldOutputs.push({ name: inp, mode: sel });
+                oldOutputs.push({ name: row.querySelector('.var-input').value, mode: row.querySelector('.mode-select').value });
             });
             oldOutputs.splice(index, 1);
-            
             select.value = count - 1;
-            
             outContainer.innerHTML = '';
             for (let i = 0; i < count - 1; i++) {
-                const oldObj = oldOutputs[i] || {};
-                const defaultVal = oldObj.name || `輸出變數${i+1}`;
-                const defaultMode = oldObj.mode || 'text'; 
-                
+                const defaultMode = (oldOutputs[i] && oldOutputs[i].mode) ? oldOutputs[i].mode : 'text';
                 outContainer.innerHTML += `
                     <div class="flex gap-2 items-center output-row">
-                        <input type="text" id="cfgOut_${i}" value="${defaultVal}" onchange="generateTable()" class="var-input flex-1" placeholder="變數名稱">
-                        <select id="cfgMode_${i}" onchange="generateTable()" class="mode-select text-[18px] border border-slate-300 rounded p-1 bg-white outline-none text-slate-600">
+                        <input type="text" id="cfgOut_${i}" value="${(oldOutputs[i] && oldOutputs[i].name) || `輸出變數${i+1}`}" onchange="generateTable()" class="var-input flex-1 text-[18px]">
+                        <select id="cfgMode_${i}" onchange="generateTable()" class="mode-select text-[18px] border border-slate-300 rounded p-1 bg-white outline-none text-slate-600 flex-none">
                             <option value="text" ${defaultMode === 'text' ? 'selected' : ''}>文字 (純文字)</option>
                             <option value="round0" ${defaultMode === 'round0' ? 'selected' : ''}>四捨五入 (整數)</option>
                             <option value="round1" ${defaultMode === 'round1' ? 'selected' : ''}>四捨五入 (小數 1 位)</option>
                             <option value="round2" ${defaultMode === 'round2' ? 'selected' : ''}>四捨五入 (小數 2 位)</option>
                         </select>
-                        <button onclick="removeOutput(${i})" class="delete-btn text-slate-400 hover:text-red-500 transition px-1" title="刪除此變數"><i class="fa-solid fa-trash-can"></i></button>
-                    </div>
-                `;
+                        <button onclick="removeOutput(${i})" class="delete-btn text-slate-400 hover:text-red-500 transition px-1"><i class="fa-solid fa-trash-can"></i></button>
+                    </div>`;
             }
             applyLockState();
-            generateTable(); // 自動同步更新表格
+            generateTable();
         }
 
         function generateTable() {
@@ -597,20 +458,8 @@
             
             currentConfig.inputs = [];
             currentConfig.outputs = [];
-            
-            for (let i = 0; i < inCount; i++) {
-                currentConfig.inputs.push({ 
-                    name: document.getElementById(`cfgIn_${i}`).value || `未命名入${i+1}`, 
-                    type: 'input' 
-                });
-            }
-            for (let i = 0; i < outCount; i++) {
-                currentConfig.outputs.push({ 
-                    name: document.getElementById(`cfgOut_${i}`).value || `未命名出${i+1}`, 
-                    type: 'output',
-                    mode: document.getElementById(`cfgMode_${i}`).value
-                });
-            }
+            for (let i = 0; i < inCount; i++) currentConfig.inputs.push({ name: document.getElementById(`cfgIn_${i}`).value || `未命名入${i+1}`, type: 'input' });
+            for (let i = 0; i < outCount; i++) currentConfig.outputs.push({ name: document.getElementById(`cfgOut_${i}`).value || `未命名出${i+1}`, type: 'output', mode: document.getElementById(`cfgMode_${i}`).value });
 
             const thead = document.getElementById('tableHeader');
             let tr1 = `<tr>
@@ -621,77 +470,60 @@
                 <th rowspan="2" class="border border-slate-300 p-2 bg-slate-200 text-slate-600 font-bold w-24 text-center">評分</th>
             </tr>`;
             
-            let tr2 = `<tr class="text-[16px]">`;
+            let tr2 = `<tr class="text-[18px]">`;
             currentConfig.inputs.forEach(cfg => tr2 += `<th class="border border-slate-300 p-1 text-center bg-blue-50 text-slate-700">${cfg.name}</th>`);
             currentConfig.outputs.forEach(cfg => tr2 += `<th class="border border-slate-300 p-1 text-center bg-green-50 text-slate-700">${cfg.name}</th>`);
             currentConfig.outputs.forEach(cfg => tr2 += `<th class="border border-slate-300 p-1 text-center bg-purple-50 text-slate-700">${cfg.name}</th>`);
             tr2 += `</tr>`;
-            
             thead.innerHTML = tr1 + tr2;
 
             const existingRows = document.querySelectorAll('#testDataBody tr');
             const savedData = [];
             existingRows.forEach(row => {
-                const inVals = Array.from(row.querySelectorAll('input[data-type="in"]')).map(el => el.value);
-                const outVals = Array.from(row.querySelectorAll('input[data-type="out"]')).map(el => el.value);
-                savedData.push({ in: inVals, out: outVals });
+                savedData.push({ 
+                    in: Array.from(row.querySelectorAll('input[data-type="in"]')).map(el => el.value), 
+                    out: Array.from(row.querySelectorAll('input[data-type="out"]')).map(el => el.value) 
+                });
             });
 
             const tbody = document.getElementById('testDataBody');
             tbody.innerHTML = '';
-            
             for (let r = 0; r < 5; r++) {
                 const tr = document.createElement('tr');
-                tr.className = r % 2 !== 0 ? 'bg-slate-50' : 'bg-white';
-                tr.classList.add('border-b', 'border-slate-200', 'hover:bg-indigo-50/50', 'transition-colors');
+                tr.className = r % 2 !== 0 ? 'bg-slate-50 border-b border-slate-200 hover:bg-indigo-50/50 transition-colors' : 'bg-white border-b border-slate-200 hover:bg-indigo-50/50 transition-colors';
                 
                 let tdHtml = `<td class="border-r border-slate-200 p-2 text-center text-slate-500 font-medium">${r+1}</td>`;
-                
                 currentConfig.inputs.forEach((cfg, idx) => {
-                    let val = "0";
-                    if (savedData[r] && savedData[r].in[idx] !== undefined) val = savedData[r].in[idx];
-                    else if (defaultMockData[r] && defaultMockData[r].in[idx] !== undefined) val = defaultMockData[r].in[idx];
-                    tdHtml += `<td class="border-r border-slate-200 p-1"><input type="text" data-type="in" data-idx="${idx}" value="${val}" class="custom-input font-mono text-blue-700 font-bold bg-blue-50/20"></td>`;
+                    let val = (savedData[r] && savedData[r].in[idx] !== undefined) ? savedData[r].in[idx] : ((defaultMockData[r] && defaultMockData[r].in[idx] !== undefined) ? defaultMockData[r].in[idx] : "0");
+                    tdHtml += `<td class="border-r border-slate-200 p-1"><input type="text" data-type="in" data-idx="${idx}" value="${val}" class="custom-input font-mono text-blue-700 font-bold bg-blue-50/20" onchange="generateTable()"></td>`;
                 });
-                
                 currentConfig.outputs.forEach((cfg, idx) => {
-                    let val = "0";
-                    if (savedData[r] && savedData[r].out[idx] !== undefined) val = savedData[r].out[idx];
-                    else if (defaultMockData[r] && defaultMockData[r].out[idx] !== undefined) val = defaultMockData[r].out[idx];
-                    tdHtml += `<td class="border-r border-slate-200 p-1"><input type="text" data-type="out" data-idx="${idx}" value="${val}" class="custom-input font-mono text-green-700 font-bold bg-green-50/20"></td>`;
+                    let val = (savedData[r] && savedData[r].out[idx] !== undefined) ? savedData[r].out[idx] : ((defaultMockData[r] && defaultMockData[r].out[idx] !== undefined) ? defaultMockData[r].out[idx] : "0");
+                    tdHtml += `<td class="border-r border-slate-200 p-1"><input type="text" data-type="out" data-idx="${idx}" value="${val}" class="custom-input font-mono text-green-700 font-bold bg-green-50/20" onchange="generateTable()"></td>`;
                 });
-
-                currentConfig.outputs.forEach((cfg, idx) => {
-                    tdHtml += `<td id="actual_r${r}_c${idx}" class="border-r border-slate-200 p-2 text-center font-mono text-slate-400 bg-slate-50/50">-</td>`;
-                });
+                currentConfig.outputs.forEach((cfg, idx) => { tdHtml += `<td id="actual_r${r}_c${idx}" class="border-r border-slate-200 p-2 text-center font-mono text-slate-400 bg-slate-50/50">-</td>`; });
                 tdHtml += `<td id="status_r${r}" class="p-2 text-center text-slate-400 bg-slate-50/50 w-24">-</td>`;
-                
                 tr.innerHTML = tdHtml;
                 tbody.appendChild(tr);
             }
             
             const summaryEl = document.getElementById('gradingSummary');
             if(summaryEl) summaryEl.classList.add('hidden');
-            
-            applyLockState(); // 確保新生成的表格元素套用目前狀態
-            log(`已更新綜合測試表，準備就緒。`, 'info');
+            applyLockState(); 
         }
 
         function log(message, type = 'info') {
             const consoleDiv = document.getElementById('consoleLog');
             if (!consoleDiv) return;
             const entry = document.createElement('div');
-            
             if (type === 'error') entry.className = `log-entry text-red-400`;
             else if (type === 'success') entry.className = `log-entry text-emerald-400`;
             else if (type === 'warn') entry.className = `log-entry text-yellow-400`;
             else entry.className = `log-entry text-slate-300`;
-
             const time = new Date().toLocaleTimeString('en-US', { hour12: false });
             entry.innerText = `[${time}] ${message}`;
             consoleDiv.appendChild(entry);
             consoleDiv.scrollTop = consoleDiv.scrollHeight;
-            
             const statusEl = document.getElementById('statusText');
             if(statusEl) statusEl.innerText = message.length > 30 ? message.substring(0, 30) + '...' : message;
         }
@@ -701,9 +533,7 @@
             if (typeof moduleExport === 'function') return moduleExport;
             if (moduleExport.default) {
                 if (typeof moduleExport.default === 'function') return moduleExport.default;
-                if (typeof moduleExport.default === 'object' && moduleExport.default.default && typeof moduleExport.default.default === 'function') {
-                    return moduleExport.default.default;
-                }
+                if (typeof moduleExport.default === 'object' && moduleExport.default.default && typeof moduleExport.default.default === 'function') return moduleExport.default.default;
             }
             if (name && moduleExport[name] && typeof moduleExport[name] === 'function') return moduleExport[name];
             return null;
@@ -712,7 +542,6 @@
         function initVM() {
             try {
                 if (typeof window.VirtualMachine === 'undefined') throw new Error('Scratch VM 未定義。');
-                
                 const VMClass = resolveConstructor(window.VirtualMachine, 'VirtualMachine');
                 vm = new VMClass();
                 vm.setTurboMode(true);
@@ -723,14 +552,7 @@
                         storage = new StorageClass();
                         vm.attachStorage(storage);
                         
-                        storage.addWebSource(
-                            [storage.AssetType.ImageVector, storage.AssetType.ImageBitmap, storage.AssetType.Sound],
-                            asset => `https://assets.scratch.mit.edu/${asset.assetId}.${asset.dataFormat}`
-                        );
-                        storage.addWebSource(
-                            [storage.AssetType.ImageVector, storage.AssetType.ImageBitmap, storage.AssetType.Sound],
-                            asset => `https://assets.scratch.mit.edu/internalapi/asset/${asset.assetId}.${asset.dataFormat}/get/`
-                        );
+                        // 統一使用 Turbowarp 代理伺服器以解決 GitHub Pages 上的 CORS 問題
                         storage.addWebSource(
                             [storage.AssetType.ImageVector, storage.AssetType.ImageBitmap, storage.AssetType.Sound],
                             asset => `https://trampoline.turbowarp.org/assets/${asset.assetId}.${asset.dataFormat}`
@@ -741,17 +563,13 @@
                 const canvas = document.getElementById('scratch-stage');
                 if (typeof window.ScratchRender !== 'undefined') {
                     const RenderClass = resolveConstructor(window.ScratchRender, 'ScratchRender');
-                    if (RenderClass) {
-                        renderer = new RenderClass(canvas);
-                        vm.attachRenderer(renderer);
-                    }
+                    if (RenderClass) { renderer = new RenderClass(canvas); vm.attachRenderer(renderer); }
                 }
 
                 if (typeof window.ScratchSVGRenderer !== 'undefined') {
                     const SvgObj = window.ScratchSVGRenderer;
                     let SVGRendererClass = typeof SvgObj === 'function' ? SvgObj : (SvgObj.SVGRenderer || SvgObj.default);
                     let BitmapAdapterClass = typeof SvgObj === 'function' ? SvgObj.BitmapAdapter : (SvgObj.BitmapAdapter || (SvgObj.default && SvgObj.default.BitmapAdapter));
-
                     if (SVGRendererClass) vm.attachV2SVGAdapter(new SVGRendererClass());
                     if (BitmapAdapterClass) vm.attachV2BitmapAdapter(new BitmapAdapterClass());
                 }
@@ -797,22 +615,15 @@
             loadBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
             runBtn.disabled = true;
             
-            if (isProjectLoaded) {
-                vm.stopAll();
-                vm.clear();
-                isProjectLoaded = false;
-            }
+            if (isProjectLoaded) { vm.stopAll(); vm.clear(); isProjectLoaded = false; }
             
             try {
                 log(`獲取專案資訊: ${projectId}...`);
-                
                 let metadata = {};
                 try {
                     const metaResp = await fetch(`https://trampoline.turbowarp.org/proxy/projects/${projectId}`);
                     if (metaResp.ok) metadata = await metaResp.json();
-                } catch(e) {
-                    console.warn("無法取得專案 Meta，嘗試直接下載專案檔。");
-                }
+                } catch(e) {}
                 
                 let pTitle = metadata.title || `專案 ID: ${projectId}`;
                 let pAuthor = metadata.author ? metadata.author.username : '未知';
@@ -824,11 +635,10 @@
                     }
                 }
                 projectTitle.innerText = `作者: ${pAuthor} | 專案: ${pTitle} | 日期: ${pDateStr}`;
-                projectTitle.title = projectTitle.innerText; // 滑鼠游標懸停可顯示完整內容
+                projectTitle.title = projectTitle.innerText; 
                 
                 log(`下載專案內容...`);
                 let projectBuffer = null;
-                
                 const urls = [
                     metadata.project_token ? `https://projects.scratch.mit.edu/${projectId}?token=${metadata.project_token}` : null,
                     `https://projects.scratch.mit.edu/${projectId}`,
@@ -838,15 +648,11 @@
                 for (const url of urls) {
                     try {
                         const resp = await fetch(url);
-                        if (resp.ok) {
-                            projectBuffer = await resp.arrayBuffer();
-                            break; 
-                        }
+                        if (resp.ok) { projectBuffer = await resp.arrayBuffer(); break; }
                     } catch(err) {}
                 }
                 
                 if (!projectBuffer) throw new Error('專案下載失敗，請確認是否公開或 ID 錯誤。');
-
                 log(`正在將專案載入虛擬機...`);
                 await vm.loadProject(projectBuffer);
                 vm.setTurboMode(true);
@@ -857,9 +663,7 @@
                 return true;
 
             } catch (e) {
-                const errorMsg = (e && e.message) ? e.message : "未知錯誤";
-                console.error("詳細載入錯誤:", e);
-                log(`載入失敗: ${errorMsg}`, 'error');
+                log(`載入失敗: ${(e && e.message) ? e.message : "未知錯誤"}`, 'error');
                 projectTitle.innerText = '載入失敗';
                 return false;
             } finally {
@@ -875,10 +679,7 @@
                         const v = target.variables[id];
                         if (v.type === '') {
                             const matchedInput = currentConfig.inputs.find(cfg => cfg.name === v.name);
-                            if (matchedInput) {
-                                const idx = currentConfig.inputs.indexOf(matchedInput);
-                                v.value = inputValues[idx];
-                            }
+                            if (matchedInput) { v.value = inputValues[currentConfig.inputs.indexOf(matchedInput)]; }
                         }
                     }
                 });
@@ -893,10 +694,7 @@
                         const v = target.variables[id];
                         if (v.type === '') {
                             const matchedOutput = currentConfig.outputs.find(cfg => cfg.name === v.name);
-                            if (matchedOutput) {
-                                const idx = currentConfig.outputs.indexOf(matchedOutput);
-                                results[idx] = v.value;
-                            }
+                            if (matchedOutput) { results[currentConfig.outputs.indexOf(matchedOutput)] = v.value; }
                         }
                     }
                 });
@@ -909,42 +707,28 @@
                 window.testInputQueue = [...inputValues];
                 vm.stopAll();
                 vm.greenFlag();
-                
                 let injectTicks = 0;
                 const interval = setInterval(() => {
                     injectVariables(inputValues);
                     injectTicks++;
                     if (injectTicks > 10) clearInterval(interval); 
                 }, 30);
-
-                setTimeout(() => {
-                    const outputValues = extractVariables();
-                    vm.stopAll(); 
-                    resolve(outputValues);
-                }, 1500);
+                setTimeout(() => { resolve(extractVariables()); }, 1500);
             });
         }
         
         function compareValuesWithMode(expected, actual, mode) {
             const expStr = String(expected).trim();
             const actStr = String(actual).trim();
-            
             if (expStr === actStr) return true;
             
             const expNum = parseFloat(expStr);
             let actNum = parseFloat(actStr);
+            if (mode === 'text' || isNaN(expNum) || isNaN(actNum)) return false; 
             
-            if (mode === 'text' || isNaN(expNum) || isNaN(actNum)) {
-                return false; 
-            }
-            
-            if (mode === 'round0') {
-                actNum = Math.round(actNum);
-            } else if (mode === 'round1') {
-                actNum = Math.round(actNum * 10) / 10;
-            } else if (mode === 'round2') {
-                actNum = Math.round(actNum * 100) / 100;
-            }
+            if (mode === 'round0') actNum = Math.round(actNum);
+            else if (mode === 'round1') actNum = Math.round(actNum * 10) / 10;
+            else if (mode === 'round2') actNum = Math.round(actNum * 100) / 100;
             
             return Math.abs(expNum - actNum) <= 0.001;
         }
@@ -952,18 +736,13 @@
         async function runBatchTest() {
             const runBtn = document.getElementById('runBtn');
             const originalBtnText = runBtn.innerHTML;
-            
-            if (!isProjectLoaded) {
-                const success = await loadProject();
-                if (!success) return;
-            }
+            if (!isProjectLoaded) { if (!(await loadProject())) return; }
 
             runBtn.disabled = true;
             runBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 評分執行中...';
             
             try {
                 const rows = document.querySelectorAll('#testDataBody tr');
-                
                 for(let r = 0; r < rows.length; r++) {
                     document.getElementById(`status_r${r}`).innerHTML = '<i class="fa-solid fa-spinner fa-spin text-indigo-400"></i>';
                     currentConfig.outputs.forEach((c, idx) => {
@@ -974,75 +753,51 @@
                 }
 
                 log(`--- 開始自動評分 (共 ${rows.length} 筆) ---`, 'info');
-                let allPassed = true;
                 let totalScore = 0;
 
                 for (let i = 0; i < rows.length; i++) {
                     const row = rows[i];
-                    
                     const inInputs = Array.from(row.querySelectorAll('input[data-type="in"]')).map(el => el.value);
                     const expectedOutputs = Array.from(row.querySelectorAll('input[data-type="out"]')).map(el => el.value);
                     
                     log(`[測試 ${i+1}] 測試執行中...`);
                     const scratchOutputs = await runSingleTest(inInputs);
-
-                    let rowPassed = true;
                     let rowScore = 0;
                     
                     for (let j = 0; j < expectedOutputs.length; j++) {
-                        const mode = currentConfig.outputs[j].mode;
-                        // 背景邏輯：使用設定的比對模式去判斷對錯
-                        const isMatch = compareValuesWithMode(expectedOutputs[j], scratchOutputs[j], mode);
-                        if (!isMatch) {
-                            rowPassed = false;
-                        } else {
-                            rowScore += 10;
-                        }
+                        const isMatch = compareValuesWithMode(expectedOutputs[j], scratchOutputs[j], currentConfig.outputs[j].mode);
+                        if (isMatch) rowScore += 10;
                         
                         let actualDisplay = scratchOutputs[j];
-                        
-                        // 畫面呈現邏輯：無論如何，只要是數字且有小數點，就「最多」顯示到小數點後第 5 位
-                        // 這保證了畫面上呈現的是 Scratch 最原始的輸出（只是截短了無限循環小數避免爆版）
                         if (!isNaN(parseFloat(actualDisplay)) && String(actualDisplay).includes('.')) {
-                             const num = parseFloat(actualDisplay);
-                             actualDisplay = Number(num.toFixed(5)).toString();
+                             actualDisplay = Number(parseFloat(actualDisplay).toFixed(5)).toString();
                         }
                         
                         const actualCell = document.getElementById(`actual_r${i}_c${j}`);
                         actualCell.innerHTML = actualDisplay;
-                        
-                        if (isMatch) {
-                            actualCell.className = "border-r border-slate-200 p-2 text-center font-mono text-green-700 bg-green-50 font-bold";
-                        } else {
-                            actualCell.className = "border-r border-slate-200 p-2 text-center font-mono text-red-600 bg-red-50 font-bold";
-                        }
+                        actualCell.className = isMatch ? "border-r border-slate-200 p-2 text-center font-mono text-green-700 bg-green-50 font-bold" : "border-r border-slate-200 p-2 text-center font-mono text-red-600 bg-red-50 font-bold";
                     }
                     
                     totalScore += rowScore;
                     const statusCell = document.getElementById(`status_r${i}`);
-                    let maxRowScore = expectedOutputs.length * 10;
                     
-                    if (rowScore === maxRowScore) {
+                    if (rowScore === expectedOutputs.length * 10) {
                         statusCell.innerHTML = `<span class="bg-green-100 text-green-700 px-3 py-1.5 rounded-full text-[17px] font-bold border border-green-200 shadow-sm">${rowScore}分</span>`;
                         statusCell.className = "p-2 text-center bg-green-50/30";
                     } else if (rowScore > 0) {
                         statusCell.innerHTML = `<span class="bg-amber-100 text-amber-700 px-3 py-1.5 rounded-full text-[17px] font-bold border border-amber-200 shadow-sm">${rowScore}分</span>`;
                         statusCell.className = "p-2 text-center bg-amber-50/30";
-                        allPassed = false;
                     } else {
-                        allPassed = false;
                         statusCell.innerHTML = `<span class="bg-red-100 text-red-700 px-3 py-1.5 rounded-full text-[17px] font-bold border border-red-200 shadow-sm">0分</span>`;
                         statusCell.className = "p-2 text-center bg-red-50/30";
                     }
                 }
 
                 const now = new Date();
-                const timeStr = `評分時間：${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日 ${String(now.getHours()).padStart(2, '0')}時${String(now.getMinutes()).padStart(2, '0')}分${String(now.getSeconds()).padStart(2, '0')}秒`;
-                document.getElementById('gradingTime').innerText = timeStr;
-                document.getElementById('gradingTotalScore').innerHTML = `總分：<span class="text-5xl text-red-600 mx-2">${totalScore}</span> 分`;
+                document.getElementById('gradingTime').innerText = `評分時間：${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日 ${String(now.getHours()).padStart(2, '0')}時${String(now.getMinutes()).padStart(2, '0')}分${String(now.getSeconds()).padStart(2, '0')}秒`;
+                document.getElementById('gradingTotalScore').innerHTML = `總分：<span class="text-[42px] text-red-600 mx-2">${totalScore}</span> 分`;
                 document.getElementById('gradingSummary').classList.remove('hidden');
 
-                // 移除容易造成誤會的 allPassed 判定與紅色錯誤提示
                 log(`評分執行完畢，最終得分：${totalScore} 分`, 'info');
 
             } catch (err) {
