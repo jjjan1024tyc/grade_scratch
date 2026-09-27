@@ -558,7 +558,7 @@
             return null;
         }
 
-        // 啟動 Scratch 虛擬機 (終極防護版)
+        // 啟動 Scratch 虛擬機 (極速無音效/無圖防護版)
         function initVM() {
             try {
                 if (typeof window.VirtualMachine === 'undefined') throw new Error('Scratch VM 未定義。');
@@ -574,7 +574,6 @@
                         storage.assetHost = "https://assets.scratch.mit.edu/";
                         vm.attachStorage(storage);
                         
-                        // 只要求圖片素材從官方伺服器下載
                         storage.addWebSource(
                             [storage.AssetType.ImageVector, storage.AssetType.ImageBitmap],
                             asset => `https://assets.scratch.mit.edu/internalapi/asset/${asset.assetId}.${asset.dataFormat}/get/`
@@ -586,20 +585,20 @@
                         const originalLoad = storage.load.bind(storage);
                         storage.load = async function(assetType, assetId, dataFormat) {
                             
-                            // 1. 完全封殺音效下載！只要是聲音，一律回傳 null。
-                            // 這是防止 HTTPS GitHub Pages 觸發瀏覽器 AudioContext 嚴格政策導致虛擬機死鎖的關鍵。
+                            // 1. 暴力阻斷音效：遇到音效，瞬間回傳 null！讓虛擬機以為音效不見了直接跳過。
+                            // 這是解決 HTTPS Github Pages 卡死問題的究極解法，因為我們根本不需要音效。
                             if (assetType === storage.AssetType.Sound) {
                                 return null; 
                             }
                             
-                            // 2. 對於圖片等其他素材，加上「5 秒強制超時」。
-                            // 如果網路卡住，5 秒後會強迫放棄該圖片，讓虛擬機繼續載入專案本體（這對評量變數邏輯毫無影響）。
+                            // 2. 對於圖片等其他素材，加上「3 秒強制超時」。
+                            // 評量工具看重的是邏輯運算，如果圖片抓太久（超過 3 秒），就直接放棄讓載入繼續。
                             try {
                                 const loadPromise = originalLoad(assetType, assetId, dataFormat);
-                                const timeoutPromise = new Promise(resolve => setTimeout(() => resolve(null), 5000));
+                                const timeoutPromise = new Promise(resolve => setTimeout(() => resolve(null), 3000));
                                 return await Promise.race([loadPromise, timeoutPromise]);
                             } catch (e) {
-                                return null; // 載入失敗就跳過
+                                return null;
                             }
                         };
                     }
@@ -669,7 +668,6 @@
                 log(`獲取專案資訊: ${projectId}...`);
                 let metadata = {};
                 try {
-                    // 使用 Turbowarp API 獲取 Metadata 以避開嚴格的 CORS 限制
                     const metaResp = await fetch(`https://trampoline.turbowarp.org/proxy/projects/${projectId}`);
                     if (metaResp.ok) metadata = await metaResp.json();
                 } catch(e) {}
@@ -706,7 +704,6 @@
                 try {
                     log(`正在將專案載入虛擬機...`);
                     
-                    // 虛擬機載入 (有了我們上面的音效攔截與圖片超時設計，這裡絕對不會卡死了)
                     const loadPromise = vm.loadProject(projectBuffer);
                     const timeoutPromise = new Promise((_, reject) => {
                         setTimeout(() => reject(new Error("虛擬機載入超時 (異常狀態)")), 15000);
