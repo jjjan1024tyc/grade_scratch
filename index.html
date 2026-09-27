@@ -587,27 +587,33 @@
                     const StorageClass = resolveConstructor(window.ScratchStorage, 'ScratchStorage');
                     if (StorageClass) {
                         storage = new StorageClass();
-                        
-                        // 【關鍵修正】移除會阻擋 GitHub Pages 的 Turbowarp 代理
-                        // 改回使用完全開放 CORS 的 Scratch 官方素材伺服器
                         storage.projectHost = "https://projects.scratch.mit.edu/";
                         storage.assetHost = "https://assets.scratch.mit.edu/";
-                        
                         vm.attachStorage(storage);
                         
-                        // 統一使用官方伺服器來載入所有圖片與音效素材
+                        // 【終極解法 1】只從官方伺服器抓圖片。
                         storage.addWebSource(
-                            [storage.AssetType.ImageVector, storage.AssetType.ImageBitmap, storage.AssetType.Sound],
+                            [storage.AssetType.ImageVector, storage.AssetType.ImageBitmap],
                             asset => `https://assets.scratch.mit.edu/internalapi/asset/${asset.assetId}.${asset.dataFormat}/get/`
+                        );
+                        // 【終極解法 2】攔截所有音效下載，強迫餵給系統一個極小的空白假音檔，完全阻絕網路與解析卡死
+                        storage.addWebSource(
+                            [storage.AssetType.Sound],
+                            asset => "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//OEAAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAAEAAABIAD+//7+////////////////////////////////////////////////////////AAAAAExhdmM1OC41NC4xMDAAAAAAAAAAAAAAAABAAA=="
                         );
                     }
                 }
 
-                // 【防卡死關鍵】初始化音效引擎：若未載入，含音效的專案會導致虛擬機解析時永遠卡住
                 if (typeof window.ScratchAudio !== 'undefined') {
                     const AudioEngineClass = typeof window.ScratchAudio === 'function' ? window.ScratchAudio : (window.ScratchAudio.AudioEngine || window.ScratchAudio.default);
                     if (AudioEngineClass) {
-                        vm.attachAudioEngine(new AudioEngineClass());
+                        const engine = new AudioEngineClass();
+                        // 【終極解法 3】暴力攔截音效解碼器！不管系統要解碼什麼，都瞬間回傳空的物件。
+                        // 這能 100% 避免 GitHub Pages 的嚴格音效政策造成的死鎖。
+                        engine.decodeSoundPlayer = async function() { 
+                            return { id: 'mock', buffer: null, play: () => {}, stop: () => {} }; 
+                        };
+                        vm.attachAudioEngine(engine);
                     }
                 }
 
