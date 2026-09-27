@@ -116,7 +116,6 @@
             </div>
             
             <div id="infoTableContainer" class="hidden w-full border border-slate-300 rounded-lg overflow-x-auto mt-1 shadow-sm">
-                <!-- 6 欄 2 列，根據內容自動適應寬度的表格，內容水平置中 -->
                 <table class="w-full text-[16px] xl:text-[18px] border-collapse table-auto bg-white min-w-max">
                     <thead class="bg-indigo-50 border-b border-slate-300 text-indigo-900">
                         <tr>
@@ -130,11 +129,11 @@
                     </thead>
                     <tbody>
                         <tr class="align-middle text-slate-700">
-                            <td id="infoAuthor" class="p-2 border-r border-slate-200 font-medium whitespace-nowrap text-center">-</td>
-                            <td id="infoProjectName" class="p-2 border-r border-slate-200 font-bold text-slate-800 text-center">-</td>
-                            <td id="infoProjectTime" class="p-2 border-r border-slate-200 whitespace-nowrap text-center">-</td>
-                            <td id="infoDescription" class="p-2 border-r border-slate-200 text-slate-700 text-center">-</td>
-                            <td id="infoGradingTime" class="p-2 border-r border-slate-200 whitespace-nowrap text-slate-400 text-center">尚未評分</td>
+                            <td id="infoAuthor" class="p-2 border-r border-slate-200 font-medium text-center whitespace-nowrap">-</td>
+                            <td id="infoProjectName" class="p-2 border-r border-slate-200 font-bold text-slate-800 text-center whitespace-nowrap">-</td>
+                            <td id="infoProjectTime" class="p-2 border-r border-slate-200 text-center whitespace-nowrap">-</td>
+                            <td id="infoDescription" class="p-2 border-r border-slate-200 text-slate-800 text-center">-</td>
+                            <td id="infoGradingTime" class="p-2 border-r border-slate-200 text-slate-400 text-center whitespace-nowrap">尚未評分</td>
                             <td class="p-2 text-center bg-slate-50/50 whitespace-nowrap">
                                 <span id="infoTotalScore" class="text-[28px] font-bold text-red-600">-</span>
                             </td>
@@ -662,7 +661,7 @@
                 document.getElementById('infoAuthor').innerText = pAuthor;
                 document.getElementById('infoProjectName').innerText = pTitle;
                 document.getElementById('infoProjectTime').innerText = pDateStr;
-                document.getElementById('infoDescription').innerText = pDescription !== '' ? pDescription : '無';
+                document.getElementById('infoDescription').innerText = pDescription !== '' ? pDescription : '';
                 
                 document.getElementById('infoGradingTime').innerText = '尚未評分';
                 document.getElementById('infoGradingTime').classList.add('text-slate-400');
@@ -804,7 +803,11 @@
                 }
 
                 log(`--- 開始自動評分 (共 ${rows.length} 筆) ---`, 'info');
-                let totalScore = 0;
+                
+                // 動態計分邏輯：總滿分為 100，每格的分數為 100 / 總輸出格數
+                const totalCellsCount = rows.length * currentConfig.outputs.length;
+                const pointsPerCell = 100 / totalCellsCount;
+                let totalCorrectCells = 0;
 
                 for (let i = 0; i < rows.length; i++) {
                     const row = rows[i];
@@ -813,11 +816,11 @@
                     
                     log(`[測試 ${i+1}] 測試執行中...`);
                     const scratchOutputs = await runSingleTest(inInputs);
-                    let rowScore = 0;
+                    let rowCorrectCount = 0;
                     
                     for (let j = 0; j < expectedOutputs.length; j++) {
                         const isMatch = compareValuesWithMode(expectedOutputs[j], scratchOutputs[j], currentConfig.outputs[j].mode);
-                        if (isMatch) rowScore += 10;
+                        if (isMatch) rowCorrectCount++;
                         
                         let actualDisplay = scratchOutputs[j];
                         if (!isNaN(parseFloat(actualDisplay)) && String(actualDisplay).includes('.')) {
@@ -829,14 +832,19 @@
                         actualCell.className = isMatch ? "border-r border-slate-200 p-2 text-center font-mono text-green-700 bg-green-50 font-bold text-[18px]" : "border-r border-slate-200 p-2 text-center font-mono text-red-600 bg-red-50 font-bold text-[18px]";
                     }
                     
-                    totalScore += rowScore;
+                    totalCorrectCells += rowCorrectCount;
+                    
+                    // 計算單列表現，並做小數點修飾(僅留一位確保美觀)
+                    const rowScore = rowCorrectCount * pointsPerCell;
+                    const displayRowScore = Number(rowScore.toFixed(1)); 
+                    
                     const statusCell = document.getElementById(`status_r${i}`);
                     
-                    if (rowScore === expectedOutputs.length * 10) {
-                        statusCell.innerHTML = `<span class="text-green-700">${rowScore}</span>`;
+                    if (rowCorrectCount === expectedOutputs.length) {
+                        statusCell.innerHTML = `<span class="text-green-700">${displayRowScore}</span>`;
                         statusCell.className = "p-2 text-center bg-green-50/30 text-[18px] font-bold";
-                    } else if (rowScore > 0) {
-                        statusCell.innerHTML = `<span class="text-amber-700">${rowScore}</span>`;
+                    } else if (rowCorrectCount > 0) {
+                        statusCell.innerHTML = `<span class="text-amber-700">${displayRowScore}</span>`;
                         statusCell.className = "p-2 text-center bg-amber-50/30 text-[18px] font-bold";
                     } else {
                         statusCell.innerHTML = `<span class="text-red-700">0</span>`;
@@ -844,15 +852,18 @@
                     }
                 }
 
+                // 總得分為四捨五入的整數
+                const finalTotalScore = Math.round((totalCorrectCells / totalCellsCount) * 100);
+
                 const now = new Date();
                 const gradingTimeStr = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
                 
                 document.getElementById('infoGradingTime').innerText = gradingTimeStr;
                 document.getElementById('infoGradingTime').classList.remove('text-slate-400');
                 document.getElementById('infoGradingTime').classList.add('text-slate-700');
-                document.getElementById('infoTotalScore').innerText = `${totalScore}`;
+                document.getElementById('infoTotalScore').innerText = `${finalTotalScore}`;
 
-                log(`評分執行完畢，最終得分：${totalScore} 分`, 'info');
+                log(`評分執行完畢，最終得分：${finalTotalScore} 分`, 'info');
 
             } catch (err) {
                 console.error(err);
